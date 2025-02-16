@@ -175,10 +175,6 @@ if __name__ == "__main__":
     # Test adding a new function
     new_function_code = """
 def auto_fix(self):
-
-    def test_git_push(self):
-    """This function verifies Git push works without asking for credentials."""
-    return "✅ Git push test successful!"
     \"\"\"A function that confirms if the bot can debug itself.\"\"\"
     return "I can now check and debug my own modifications!"
 """
