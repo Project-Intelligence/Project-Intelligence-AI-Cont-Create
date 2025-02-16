@@ -170,10 +170,6 @@ if __name__ == "__main__":
     # Test adding a new function
     new_function_code = """
 def auto_fix(self):
-
-    def self_diagnose(self):
-        \"\"\"A function that confirms the bot can analyze its own integrity.\"\"\"
-        return "Self-diagnosis complete. System functioning normally."
     \\\"\\\"\\\"A function that confirms if the bot can debug itself.\\\"\\\"\\\"
     return "I can now check and debug my own modifications!"
 """
