@@ -183,3 +183,10 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+api_keys/
+importlib/
+os/
+time/
+__pycache__/
+*.log
