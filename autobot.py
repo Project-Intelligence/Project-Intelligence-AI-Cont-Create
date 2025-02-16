@@ -25,7 +25,7 @@ logging.basicConfig(
     filename="autobot.log",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    filemode='a'  # Append logs to retain history
+    filemode='a'
 )
 
 def log_to_notion(action):
@@ -49,6 +49,10 @@ class Autobot:
     def __init__(self):
         """Initialize the automation bot."""
         log_action("Autobot initialized.", 'info')
+
+    def say_hello(self):
+        """A simple function that returns a greeting."""
+        return "Hello from the Autobot!"
 
     def run_command(self, command):
         """Execute a system command synchronously."""
@@ -79,7 +83,7 @@ class Autobot:
 
     def git_push(self):
         """Push the latest commits to the remote Git repository."""
-        push_result = self.run_command("git push")
+        push_result = self.run_command("git push origin main")
         if push_result:
             log_action("Changes pushed to remote repository successfully.")
             return "Changes pushed to remote repository successfully."
@@ -87,44 +91,52 @@ class Autobot:
             log_action("Failed to push changes.")
             return "Failed to push changes."
 
-    def generate_script(self, script_name, language="python", content=None):
-        """Generate a script file."""
-        templates = {
-            "python": f"""# {script_name}.py
-print("Hello from {script_name} script!")
-""",
-            "bash": f"""#!/bin/bash
-echo "Hello from {script_name} script!"
-""",
-            "javascript": f"""// {script_name}.js
-console.log("Hello from {script_name} script!");
-""",
-            "go": f"""// {script_name}.go
-package main
-import "fmt"
-func main() {{
-    fmt.Println("Hello from {script_name} script!")
-}}
-""",
-            "rust": f"""// {script_name}.rs
-fn main() {{
-    println!("Hello from {script_name} script!");
-}}
-"""
-        }
+    def modify_self(self, new_code, function_name):
+        """Modify autobot.py by adding a new function inside the Autobot class."""
+        script_path = "autobot.py"
 
-        if language not in templates:
-            log_action(f"Failed script generation: Unsupported language {language}", 'error')
-            return "❌ Unsupported language!"
+        try:
+            with open(script_path, "r") as file:
+                existing_code = file.readlines()
 
-        file_name = f"{script_name}.{language}"
-        script_content = content if content else templates[language]
+            # Check if function already exists
+            if any(f"def {function_name}(" in line for line in existing_code):
+                return f"❌ Function {function_name} already exists in autobot.py!"
 
-        with open(file_name, "w") as file:
-            file.write(script_content)
-        log_action(f"Generated script: {file_name}")
-        self.git_commit(f"Generated script {file_name}")
-        return f"✅ Script {file_name} created."
+            # Find the index of `class Autobot`
+            class_index = None
+            for i, line in enumerate(existing_code):
+                if line.strip().startswith("class Autobot"):
+                    class_index = i
+                    break
+
+            if class_index is None:
+                return "❌ Error: Could not find Autobot class in autobot.py!"
+
+            # Find the last function inside the class
+            insert_index = class_index + 1
+            while insert_index < len(existing_code):
+                if existing_code[insert_index].strip().startswith("def "):
+                    last_function_index = insert_index
+                insert_index += 1
+
+            # Ensure proper indentation (inside class)
+            indented_code = "\n".join(["    " + line for line in new_code.split("\n")])
+
+            # Insert new function inside the Autobot class
+            existing_code.insert(last_function_index + 1, "\n" + indented_code + "\n")
+
+            with open(script_path, "w") as file:
+                file.writelines(existing_code)
+
+            # Commit and push changes
+            self.git_commit(f"Added new feature: {function_name}")
+            self.git_push()
+
+            return f"✅ Successfully added {function_name} to autobot.py and pushed to GitHub!"
+        
+        except Exception as e:
+            return f"❌ Error modifying autobot.py: {str(e)}"
 
     def list_files(self, directory="."):
         """List files in a directory."""
@@ -136,55 +148,22 @@ fn main() {{
             log_action(f"Error listing files in {directory}: {str(e)}", 'error')
             return f"❌ Error: {str(e)}"
 
-    def list_vast_instances(self):
-        """List active Vast.ai instances."""
-        url = f"{VAST_BASE_URL}/instances?api_key={VAST_API_KEY}"
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            instances = data.get("instances", {})
-
-            if not instances:
-                log_action("No active Vast.ai instances found.")
-                return "ℹ️ No active instances."
-
-            result = "\n".join([
-                f"ID: {inst.get('id', 'N/A')} | Machine: {inst.get('label', 'Unknown')} | Status: {inst.get('actual_status', 'Unknown')}"
-                for inst in instances.values()
-            ])
-            
-            log_action(f"Listed Vast.ai instances: {result}")
-            return result
-        except RequestException as e:
-            log_action(f"Network error listing Vast.ai instances: {str(e)}", 'error')
-            return f"❌ Network Error: {str(e)}"
-        except ValueError:
-            log_action("Error parsing Vast.ai API response", 'error')
-            return "❌ Error: Invalid API response format."
-
-    def manage_vast_instance(self, instance_id, action="start"):
-        """Start or stop a Vast.ai instance."""
-        url = f"{VAST_BASE_URL}/instances/{action}?api_key={VAST_API_KEY}"
-        payload = {"id": instance_id}
-
-        try:
-            response = requests.post(url, json=payload, timeout=10)
-            if response.status_code == 200:
-                log_action(f"{action.capitalize()}ed Vast.ai instance: {instance_id}")
-                return f"✅ {action.capitalize()}ed instance {instance_id}"
-            else:
-                log_action(f"Failed to {action} Vast.ai instance {instance_id}: {response.text}", 'error')
-                return f"❌ Error {action}ing instance: {response.text}"
-        except RequestException as e:
-            log_action(f"Error {action}ing Vast.ai instance {instance_id}: {str(e)}", 'error')
-            return f"❌ Error: {str(e)}"
-
 # Example usage
 if __name__ == "__main__":
     bot = Autobot()
     print("🔹 Running test commands...")
     print(bot.run_command("ls"))
-    print(bot.generate_script("test_script", "python"))
-    print(bot.list_vast_instances())
 
+    # Test adding a new function
+    new_function_code = """
+def say_hello(self):
+
+    
+    def introduce(self):
+        \"\"\"A function that introduces the bot.\"\"\"
+        return "I am Autobot, your automation assistant!"
+    
+    \\\"\\\"\\\"A simple function that returns a greeting.\\\"\\\"\\\"
+    return "Hello from the Autobot!"
+"""
+    print(bot.modify_self(new_function_code, "say_hello"))
