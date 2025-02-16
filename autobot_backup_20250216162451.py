@@ -102,10 +102,6 @@ class Autobot:
         return backup_name
 
     def modify_self(self, new_code, function_name):
-
-    def test_autobot(self):
-    """This function confirms that Autobot can modify itself."""
-    return "✅ Autobot self-modification works!"
         """Modify autobot.py by adding a new function inside the Autobot class."""
         script_path = "autobot.py"
         backup_name = self.backup_script()
